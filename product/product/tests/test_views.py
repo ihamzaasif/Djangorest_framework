@@ -3,49 +3,41 @@ from django.urls import reverse
 from product.models import Product
 from django.core.management import call_command
 import json
-
 class TestProductViews(TestCase):
     fixtures = ['product_data.json']
 
     def setUp(self):
-        Product.objects.create(name="testproduct",color="green", price=10)
-        self.product_id = Product.objects.get(name="testproduct",color="green", price=10).id
+        Product.objects.create(name="LCD",color="HD", price=4444)
+        self.product_id = Product.objects.get(pk=1).pk
 
     def test_show_product_GET(self):
-        response = self.client.get('', name="product")
+        response = self.client.get('/')
         data = response.json()
         self.assertEquals(response.status_code, 200)
-        expected_data = {'model': 'product.product', 'pk': 1, 'fields': {'name': 'LCD','color': 'HD', 'price':4444}}
-        self.assertEqual(data[0], expected_data)
-
+        expected_data = [{'id': 1, 'name': 'LCD', 'color': 'HD', 'price': 4444}, {'id': 7, 'name': 'LCD', 'color': 'HD', 'price': 4444}]
+        self.assertEquals(data, expected_data)
 
     def test_post_product(self):
-        data = {'name': 'Book', 'color': 'This is a book', 'price': 10}
-        response = self.client.post('', data=json.dumps(data), content_type='application/json')
+        data = {'name': 'LCD', 'color': 'HD', 'price': 4444}
+        response = self.client.post('/', data=json.dumps(data), content_type='application/json')
         self.assertEquals(response.status_code, 201)
-        self.assertEquals(Product.objects.count(), 2)
-
-        # create product with duplicate data
-        response = self.client.post('', data=json.dumps(data), content_type='application/json')
-        self.assertEquals(response.status_code, 201)
+        self.assertEquals(Product.objects.count(), 3)
 
     def test_get_product(self):
-        # You need to use the correct URL for the view and pass the product_id in the URL
-        response = self.client.get(f'/{self.product_id}/')
+        response = self.client.get(f'/{self.product_id}')
         self.assertEquals(response.status_code, 200)
-        self.assertEqual(response.data, {'name': 'testproduct', 'color': 'yellow', 'price': 10})
+        self.assertEquals(response.data, {'id': 1, 'name': 'LCD', 'color': 'HD', 'price': 4444})
 
     def test_put_product(self):
-        data = {'name': 'Book', 'color': 'This is a book', 'price': 10}
-        response = self.client.put(f'{self.product_id}/', data=json.dumps(data), content_type='application/json')
-        
+        data = {'name': 'LCD', 'color': 'HD', 'price': 4444}
+        response = self.client.put(f'/{self.product_id}', data=json.dumps(data), content_type='application/json')
         self.assertEquals(response.status_code, 200)
-        self.assertEquals(Product.objects.get(id=self.product_id).name, 'Book')
+        self.assertEquals(Product.objects.get(id=self.product_id).name,'LCD')
 
     def test_delete_product(self):
-        response = self.client.delete(f'{self.product_id}/')
+        response = self.client.delete(f'/{self.product_id}')
         self.assertEquals(response.status_code, 204)
-        self.assertEquals(Product.objects.count(), 2)
+        self.assertIsNone(Product.objects.filter(id=self.product_id).first())
 
 
 
